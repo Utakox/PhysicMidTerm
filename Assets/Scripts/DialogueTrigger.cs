@@ -3,10 +3,11 @@ using UnityEngine;
 public class DialogueTrigger : MonoBehaviour
 {
     public DialogueManager manager;
+
     public string[] lines;
+    public AudioClip[] voices;
 
     public AudioSource speaker;
-    public AudioClip voice;
 
     public bool playOnStart;
 
@@ -14,7 +15,7 @@ public class DialogueTrigger : MonoBehaviour
     {
         if (playOnStart)
         {
-            manager.StartDialogue(lines, speaker, voice);
+            StartCoroutine(manager.PlayDialogue(lines, voices, speaker));
         }
     }
 
@@ -22,7 +23,7 @@ public class DialogueTrigger : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            manager.StartDialogue(lines, speaker, voice);
+            StartCoroutine(manager.PlayDialogue(lines, voices, speaker));
         }
     }
 }
