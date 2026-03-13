@@ -8,7 +8,9 @@ public class RepairSlot : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip repairSound;
 
-    public GameObject warpDoor; // ประตูที่มีอยู่แล้วใน scene
+    public GameObject warpDoor;
+
+    public List<GameObject> objectsToDisable = new List<GameObject>();
 
     void OnTriggerEnter(Collider other)
     {
@@ -29,6 +31,11 @@ public class RepairSlot : MonoBehaviour
         if (requiredObjects.Count == 0)
         {
             warpDoor.SetActive(true);
+
+            foreach (GameObject obj in objectsToDisable)
+            {
+                obj.SetActive(false);
+            }
         }
     }
 }

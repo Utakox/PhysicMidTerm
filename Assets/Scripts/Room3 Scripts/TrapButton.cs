@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -16,6 +17,11 @@ public class TrapButton : MonoBehaviour
     public AudioSource alarmSource;
     public AudioSource musicSource;
 
+    public RawImage blackScreen;
+
+    public float alarmLoopDelay = 5f;
+    public float repairTime = 180f;
+
     private bool activated = false;
 
     void OnMouseDown()
@@ -30,7 +36,7 @@ public class TrapButton : MonoBehaviour
     {
         activated = true;
 
-        // เล่นเสียงประกาศทีละอัน
+        // เล่นเสียงประกาศ
         foreach (AudioClip voice in announcementVoices)
         {
             announcerSource.clip = voice;
@@ -38,27 +44,61 @@ public class TrapButton : MonoBehaviour
             yield return new WaitForSeconds(voice.length);
         }
 
-        // เริ่ม Alarm
-        alarmSource.clip = alarmSound;
-        alarmSource.loop = true;
-        alarmSource.Play();
-
         // เปิดไฟ siren
         foreach (GameObject light in sirenLights)
         {
-
             light.SetActive(true);
-
         }
 
-        // เล่นเพลงพื้นหลัง
+        // เริ่มเพลง background
         musicSource.clip = backgroundMusic;
         musicSource.loop = true;
         musicSource.Play();
+
+        // เริ่ม alarm loop
+        StartCoroutine(AlarmLoop());
+
+        // เริ่มจอค่อย ๆ ดำ
+        StartCoroutine(FadeToBlack());
+    }
+
+    IEnumerator AlarmLoop()
+    {
+        while (activated)
+        {
+            alarmSource.clip = alarmSound;
+            alarmSource.Play();
+
+            yield return new WaitForSeconds(alarmSound.length);
+            yield return new WaitForSeconds(alarmLoopDelay);
+        }
+    }
+
+    IEnumerator FadeToBlack()
+    {
+        float time = 0f;
+        float duration = repairTime;
+
+        Color c = blackScreen.color;
+
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+
+            float alpha = time / duration;
+
+            blackScreen.color = new Color(c.r, c.g, c.b, alpha);
+
+            yield return null;
+        }
+
+        blackScreen.color = new Color(c.r, c.g, c.b, 1f);
     }
 
     public void StopTrap()
     {
+        activated = false;
+
         alarmSource.Stop();
         musicSource.Stop();
 
