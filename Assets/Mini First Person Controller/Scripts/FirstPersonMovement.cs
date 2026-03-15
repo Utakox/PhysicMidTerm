@@ -8,43 +8,37 @@ public class FirstPersonMovement : MonoBehaviour
     [Header("Running")]
     public bool canRun = true;
     public bool IsRunning { get; private set; }
-    public bool IsMoving { get; private set; }
-
     public float runSpeed = 9;
     public KeyCode runningKey = KeyCode.LeftShift;
 
     Rigidbody rigidbody;
-
+    /// <summary> Functions to override movement speed. Will use the last added override. </summary>
     public List<System.Func<float>> speedOverrides = new List<System.Func<float>>();
+
+
 
     void Awake()
     {
+        // Get the rigidbody on this.
         rigidbody = GetComponent<Rigidbody>();
     }
 
     void FixedUpdate()
     {
+        // Update IsRunning from input.
         IsRunning = canRun && Input.GetKey(runningKey);
 
+        // Get targetMovingSpeed.
         float targetMovingSpeed = IsRunning ? runSpeed : speed;
-
         if (speedOverrides.Count > 0)
         {
             targetMovingSpeed = speedOverrides[speedOverrides.Count - 1]();
         }
 
-        Vector2 targetVelocity = new Vector2(
-            Input.GetAxis("Horizontal") * targetMovingSpeed,
-            Input.GetAxis("Vertical") * targetMovingSpeed
-        );
+        // Get targetVelocity from input.
+        Vector2 targetVelocity =new Vector2( Input.GetAxis("Horizontal") * targetMovingSpeed, Input.GetAxis("Vertical") * targetMovingSpeed);
 
-        rigidbody.velocity = transform.rotation *
-            new Vector3(targetVelocity.x, rigidbody.velocity.y, targetVelocity.y);
-
-        // ตรวจว่ากำลังเดินไหม
-        Vector3 horizontalVelocity = rigidbody.velocity;
-        horizontalVelocity.y = 0;
-
-        IsMoving = horizontalVelocity.magnitude > 0.1f;
+        // Apply movement.
+        rigidbody.velocity = transform.rotation * new Vector3(targetVelocity.x, rigidbody.velocity.y, targetVelocity.y);
     }
 }

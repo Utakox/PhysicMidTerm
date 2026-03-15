@@ -3,7 +3,9 @@ using System.Collections;
 
 public class AlarmSystem : MonoBehaviour
 {
-    public AudioSource audioSource;
+    public AudioSource buttonSpeaker;   // ลำโพงปุ่ม
+
+    public AudioSource[] alarmSpeakers; // ลำโพง alarm หลายตัว
 
     public AudioClip buttonSound;
     public AudioClip alarmSound;
@@ -11,6 +13,8 @@ public class AlarmSystem : MonoBehaviour
     public GameObject[] alarmLight;
 
     public Rigidbody[] zeroGravityObjects;
+
+    public GameObject[] objectsToDisappear;
 
     public float gravityDelay = 3f;
     public float alarmDuration = 10f;
@@ -29,15 +33,20 @@ public class AlarmSystem : MonoBehaviour
     {
         activated = true;
 
-        audioSource.PlayOneShot(buttonSound);
+        // เล่นเสียงปุ่ม
+        buttonSpeaker.PlayOneShot(buttonSound);
 
         yield return new WaitForSeconds(0.5f);
 
-        audioSource.clip = alarmSound;
-        audioSource.loop = true;
-        audioSource.Play();
+        // เล่นเสียง alarm ทุกลำโพง
+        foreach (AudioSource speaker in alarmSpeakers)
+        {
+            speaker.clip = alarmSound;
+            speaker.loop = true;
+            speaker.Play();
+        }
 
-        // เปิดไฟทุกดวง
+        // เปิดไฟ
         foreach (GameObject light in alarmLight)
         {
             light.SetActive(true);
@@ -47,12 +56,22 @@ public class AlarmSystem : MonoBehaviour
 
         yield return new WaitForSeconds(alarmDuration);
 
-        audioSource.Stop();
+        // หยุดเสียงทุกลำโพง
+        foreach (AudioSource speaker in alarmSpeakers)
+        {
+            speaker.Stop();
+        }
 
-        // ปิดไฟทุกดวง
+        // ปิดไฟ
         foreach (GameObject light in alarmLight)
         {
             light.SetActive(false);
+        }
+
+        // object หาย
+        foreach (GameObject obj in objectsToDisappear)
+        {
+            obj.SetActive(false);
         }
     }
 
