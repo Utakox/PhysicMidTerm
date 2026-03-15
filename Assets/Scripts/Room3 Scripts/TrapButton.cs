@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -8,21 +10,34 @@ public class TrapButton : MonoBehaviour
     public AudioSource announcerSource;
 
     public List<AudioClip> announcementVoices = new List<AudioClip>();
-
     public List<GameObject> sirenLights = new List<GameObject>();
 
-    public AudioClip alarmSound;
     public AudioClip backgroundMusic;
-
-    public AudioSource alarmSource;
     public AudioSource musicSource;
 
     public RawImage blackScreen;
 
-    public float alarmLoopDelay = 5f;
     public float repairTime = 180f;
 
+    [Header("Game Over")]
+    public VideoPlayer gameOverVideo;
+
+    public AudioSource gameOverMusicSource;
+    public AudioClip gameOverMusic;
+
+    public AudioSource gameOverVoiceSource;
+    public List<AudioClip> gameOverVoices = new List<AudioClip>();
+
     private bool activated = false;
+    private bool gameOver = false;
+
+    void Update()
+    {
+        if (gameOver && Input.GetKeyDown(KeyCode.R))
+        {
+            RestartGame();
+        }
+    }
 
     void OnMouseDown()
     {
@@ -36,42 +51,30 @@ public class TrapButton : MonoBehaviour
     {
         activated = true;
 
-        // เล่นเสียงประกาศ
+        // เล่นเสียง narrator
         foreach (AudioClip voice in announcementVoices)
         {
             announcerSource.clip = voice;
             announcerSource.Play();
-            yield return new WaitForSeconds(voice.length);
+            yield return new WaitForSecondsRealtime(voice.length);
         }
 
-        // เปิดไฟ siren
+        // เปิดไฟ alarm
         foreach (GameObject light in sirenLights)
         {
             light.SetActive(true);
         }
 
-        // เริ่มเพลง background
+        // เล่น background music
         musicSource.clip = backgroundMusic;
         musicSource.loop = true;
         musicSource.Play();
 
-        // เริ่ม alarm loop
-        StartCoroutine(AlarmLoop());
-
-        // เริ่มจอค่อย ๆ ดำ
         StartCoroutine(FadeToBlack());
-    }
 
-    IEnumerator AlarmLoop()
-    {
-        while (activated)
-        {
-            alarmSource.clip = alarmSound;
-            alarmSource.Play();
+        yield return new WaitForSecondsRealtime(repairTime);
 
-            yield return new WaitForSeconds(alarmSound.length);
-            yield return new WaitForSeconds(alarmLoopDelay);
-        }
+        TriggerGameOver();
     }
 
     IEnumerator FadeToBlack()
@@ -95,11 +98,72 @@ public class TrapButton : MonoBehaviour
         blackScreen.color = new Color(c.r, c.g, c.b, 1f);
     }
 
+    void TriggerGameOver()
+    {
+        if (gameOver) return;
+
+        gameOver = true;
+        activated = false;
+
+        musicSource.Stop();
+        announcerSource.Stop();
+
+        foreach (GameObject light in sirenLights)
+        {
+            light.SetActive(false);
+        }
+
+        if (blackScreen != null)
+        {
+            blackScreen.gameObject.SetActive(false);
+        }
+
+        StartCoroutine(GameOverRoutine());
+    }
+
+    IEnumerator GameOverRoutine()
+    {
+        // เล่น video
+        if (gameOverVideo != null)
+        {
+            gameOverVideo.gameObject.SetActive(true);
+            gameOverVideo.Stop();
+            gameOverVideo.frame = 0;
+            gameOverVideo.Play();
+        }
+
+        // เล่นเพลง Game Over
+        if (gameOverMusicSource != null && gameOverMusic != null)
+        {
+            gameOverMusicSource.clip = gameOverMusic;
+            gameOverMusicSource.loop = true;
+            gameOverMusicSource.Play();
+        }
+
+        // dialogue ทีละประโยค
+        foreach (AudioClip voice in gameOverVoices)
+        {
+            gameOverVoiceSource.clip = voice;
+            gameOverVoiceSource.Play();
+
+            yield return new WaitForSecondsRealtime(voice.length + 0.2f);
+        }
+
+        yield return new WaitForSecondsRealtime(1f);
+
+        Time.timeScale = 0f;
+    }
+
+    void RestartGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
     public void StopTrap()
     {
         activated = false;
 
-        alarmSource.Stop();
         musicSource.Stop();
 
         foreach (GameObject light in sirenLights)
