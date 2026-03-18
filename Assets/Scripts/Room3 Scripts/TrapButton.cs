@@ -7,6 +7,8 @@ using System.Collections.Generic;
 
 public class TrapButton : MonoBehaviour
 {
+
+    public DropMachine dropMachine;
     public AudioSource announcerSource;
 
     public List<AudioClip> announcementVoices = new List<AudioClip>();
@@ -50,6 +52,11 @@ public class TrapButton : MonoBehaviour
     IEnumerator StartTrap()
     {
         activated = true;
+
+        if (dropMachine != null)
+    {
+    dropMachine.StartDrop();
+    }
 
         // เล่นเสียง narrator
         foreach (AudioClip voice in announcementVoices)
