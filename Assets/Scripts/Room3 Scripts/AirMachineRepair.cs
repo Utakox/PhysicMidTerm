@@ -1,22 +1,57 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class AirMachineRepair : MonoBehaviour
 {
+    [Header("Required Items")]
     public List<GameObject> requiredItems = new List<GameObject>();
 
-    public List<AudioSource> airMachineSounds = new List<AudioSource>();
+    [Header("Trap System")]
+    public TrapSystem trapSystem;
 
-    public List<MonoBehaviour> airMachineScripts = new List<MonoBehaviour>();
+    [Header("Active Machine Sound (ก่อนซ่อม)")]
+    public AudioSource activeMachineSound;
 
-    public TrapButton trapSystem;
+    [Header("Particle (ก่อนซ่อม)")]
+    public ParticleSystem activeParticle; // 🔥 เพิ่ม
+
+    [Header("Complete Voice")]
+    public AudioSource voiceSource;
+    public AudioClip completeVoice;
+
+    [Header("Fixed Machine Sound (หลังซ่อม)")]
+    public AudioSource fixedMachineSound;
+
+    [Header("Fade Settings")]
+    public float fadeDuration = 3f;
+    public float fadeStartDelay = 1f;
+
+    private bool isCompleted = false;
+
+    void Start()
+    {
+        // เสียงเครื่องพัง
+        if (activeMachineSound != null)
+        {
+            activeMachineSound.loop = true;
+            activeMachineSound.Play();
+        }
+
+        // particle ทำงาน
+        if (activeParticle != null)
+        {
+            activeParticle.Play();
+        }
+    }
 
     void OnTriggerEnter(Collider other)
     {
+        if (isCompleted) return;
+
         if (requiredItems.Contains(other.gameObject))
         {
             requiredItems.Remove(other.gameObject);
-
             Destroy(other.gameObject);
 
             CheckComplete();
@@ -25,7 +60,7 @@ public class AirMachineRepair : MonoBehaviour
 
     void CheckComplete()
     {
-        if (requiredItems.Count == 0)
+        if (requiredItems.Count == 0 && !isCompleted)
         {
             ShutdownMachines();
         }
@@ -33,19 +68,87 @@ public class AirMachineRepair : MonoBehaviour
 
     void ShutdownMachines()
     {
-        // ปิดเสียงเครื่องเป่า
-        foreach (AudioSource a in airMachineSounds)
+        isCompleted = true;
+
+        // 🔥 หยุด Trap
+        if (trapSystem != null)
         {
-            a.Stop();
+            trapSystem.StopTrap();
         }
 
-        // ปิด script ที่ทำให้เครื่องเป่า
-        foreach (MonoBehaviour script in airMachineScripts)
+        // 🔇 fade out เสียงเครื่องพัง
+        if (activeMachineSound != null)
         {
-            script.enabled = false;
+            StartCoroutine(FadeOutSound(activeMachineSound, 1.5f));
         }
 
-        // ปิดระบบ trap
-        trapSystem.StopTrap();
+        // 💨 ปิด particle
+        if (activeParticle != null)
+        {
+            activeParticle.Stop();
+        }
+
+        // 🔥 เริ่ม sequence เสียง + เครื่องใหม่
+        StartCoroutine(CompleteSequence());
+    }
+
+    IEnumerator CompleteSequence()
+    {
+        // 🗣️ เล่นเสียง complete ก่อน
+        if (voiceSource != null && completeVoice != null)
+        {
+            voiceSource.clip = completeVoice;
+            voiceSource.Play();
+
+            yield return new WaitForSeconds(completeVoice.length);
+        }
+
+        // 🎧 แล้วค่อยเปิดเสียงเครื่องใหม่แบบ fade in
+        if (fixedMachineSound != null)
+        {
+            fixedMachineSound.loop = true;
+            StartCoroutine(FadeInSound(fixedMachineSound, fadeDuration, fadeStartDelay));
+        }
+    }
+
+    IEnumerator FadeInSound(AudioSource audio, float duration, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        audio.volume = 0f;
+        audio.pitch = 0.5f;
+        audio.Play();
+
+        float time = 0f;
+
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            float t = time / duration;
+
+            audio.volume = Mathf.Lerp(0f, 1f, t * t);
+            audio.pitch = Mathf.Lerp(0.5f, 1f, t);
+
+            yield return null;
+        }
+
+        audio.volume = 1f;
+        audio.pitch = 1f;
+    }
+
+    IEnumerator FadeOutSound(AudioSource audio, float duration)
+    {
+        float startVolume = audio.volume;
+        float time = 0f;
+
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            audio.volume = Mathf.Lerp(startVolume, 0f, time / duration);
+            yield return null;
+        }
+
+        audio.Stop();
+        audio.volume = startVolume;
     }
 }
