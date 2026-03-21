@@ -4,24 +4,27 @@ public class WindForce : MonoBehaviour
 {
     public FanController fan;
     public Transform windDirection;
+    public float forceMultiplier = 2f;
+    public float dragCoefficient = 0.1f;
 
     void OnTriggerStay(Collider other)
     {
-        if (!fan.fanOn) return;
-
         Rigidbody rb = other.GetComponent<Rigidbody>();
-        if (rb == null) return;
+        if (rb == null || fan == null || !fan.fanOn) return;
 
         float mass = rb.mass;
+        if (fan.windAcceleration <= mass) return;
 
-        // F = ma
-        float force = mass * fan.windAcceleration;
+        // Newton: F = m * a
+        Vector3 dir = windDirection.forward;
+        dir.y = 0f;
+        dir.Normalize();
+        float effectiveAccel = fan.windAcceleration - mass;
+        Vector3 force = dir * effectiveAccel * forceMultiplier;
 
-        if (fan.windAcceleration < mass)
-            return;
+        // Air resistance: F_drag = -k*v
+        Vector3 drag = -rb.velocity * dragCoefficient;
 
-        Vector3 windForce = windDirection.forward * force;
-
-        rb.AddForce(windForce);
+        rb.AddForce(force + drag, ForceMode.Acceleration);
     }
 }
