@@ -1,21 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using UnityEngine.SceneManagement; // 🔥 สำคัญ
 
 public class TrapSystem : MonoBehaviour
 {
     public DropMachine dropMachine;
+    public AirMachineRepair repairSystem;
 
     [Header("Objects to Activate")]
-    public List<GameObject> objectsToActivate; // 🔥 เพิ่มตรงนี้
+    public List<GameObject> objectsToActivate;
 
+    [Header("Audio")]
+    public AudioSource ambientSource;
     public AudioSource musicSource;
     public AudioClip backgroundMusic;
 
-    public RawImage blackScreen;
+    [Header("Timer UI (World Text)")]
+    public TextMeshPro timerText;
 
+    public RawImage blackScreen;
     public float repairTime = 180f;
 
     [Header("Repair Voice")]
@@ -33,6 +40,15 @@ public class TrapSystem : MonoBehaviour
 
     private bool gameOver = false;
 
+    void Update()
+    {
+        // 🔥 กด R เพื่อ Restart
+        if (gameOver && Input.GetKeyDown(KeyCode.R))
+        {
+            RestartGame();
+        }
+    }
+
     public void StartTrap()
     {
         StartCoroutine(TrapRoutine());
@@ -40,18 +56,21 @@ public class TrapSystem : MonoBehaviour
 
     IEnumerator TrapRoutine()
     {
-        // 🔥 เปิดทุก object ที่กำหนด
+        if (ambientSource != null)
+            StartCoroutine(FadeOutSound(ambientSource, 1.5f));
+
+        if (repairSystem != null)
+            repairSystem.EnableRepair();
+
         foreach (var obj in objectsToActivate)
         {
             if (obj != null)
                 obj.SetActive(true);
         }
 
-        // 🔽 machine
         if (dropMachine != null)
             dropMachine.StartDrop();
 
-        // 🎵 music
         if (musicSource != null && backgroundMusic != null)
         {
             musicSource.clip = backgroundMusic;
@@ -59,17 +78,53 @@ public class TrapSystem : MonoBehaviour
             musicSource.Play();
         }
 
-        // 🗣️ repair loop
         if (repairVoiceSource != null && repairVoiceClip != null)
             StartCoroutine(RepairLoop());
 
-        // 🌑 fade
         if (blackScreen != null)
             StartCoroutine(FadeToBlack());
+
+        StartCoroutine(UpdateTimer());
 
         yield return new WaitForSeconds(repairTime);
 
         TriggerGameOver();
+    }
+
+    IEnumerator UpdateTimer()
+    {
+        float timeLeft = repairTime;
+
+        while (timeLeft > 0 && !gameOver)
+        {
+            timeLeft -= Time.deltaTime;
+
+            if (timerText != null)
+            {
+                int seconds = Mathf.CeilToInt(timeLeft);
+                timerText.text = "<b><color=#FF0000>" + seconds + "s</color></b>";
+            }
+
+            yield return null;
+        }
+
+        if (timerText != null)
+            timerText.text = "<b><color=#FF0000>0s</color></b>";
+    }
+
+    IEnumerator FadeOutSound(AudioSource audio, float duration)
+    {
+        float startVolume = audio.volume;
+        float t = 0f;
+
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            audio.volume = Mathf.Lerp(startVolume, 0f, t / duration);
+            yield return null;
+        }
+
+        audio.volume = 0f;
     }
 
     IEnumerator RepairLoop()
@@ -109,14 +164,12 @@ public class TrapSystem : MonoBehaviour
         if (repairVoiceSource != null)
             repairVoiceSource.Stop();
 
-        // 🔥 ปิด object ที่เคยเปิด (ถ้าต้องการ)
         foreach (var obj in objectsToActivate)
         {
             if (obj != null)
                 obj.SetActive(false);
         }
 
-        // กันจอดำบัง
         if (blackScreen != null)
             blackScreen.gameObject.SetActive(false);
 
@@ -143,61 +196,66 @@ public class TrapSystem : MonoBehaviour
             if (gameOverVoiceSource != null)
             {
                 gameOverVoiceSource.PlayOneShot(voice);
-                yield return new WaitForSeconds(voice.length);
+                yield return new WaitForSecondsRealtime(voice.length); // 🔥 สำคัญ
             }
         }
 
-        Time.timeScale = 0f;
+        // 🔥 แสดงข้อความ restart
+        if (timerText != null)
+        {
+            timerText.text = "<b><color=#FF0000>PRESS R TO RESTART</color></b>";
+        }
+
+        Time.timeScale = 0f; // 🔥 หยุดเวลา
+    }
+
+    void RestartGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void StopTrap()
-{
-    if (gameOver) return;
-
-    gameOver = true;
-
-    // ❌ หยุด coroutine ทั้งหมด
-    StopAllCoroutines();
-
-    // ❌ หยุด drop machine
-    if (dropMachine != null)
-        dropMachine.StopAllCoroutines();
-
-    // ❌ หยุดเสียงทั้งหมด
-    if (musicSource != null)
-        musicSource.Stop();
-
-    if (repairVoiceSource != null)
-        repairVoiceSource.Stop();
-
-    if (gameOverMusicSource != null)
-        gameOverMusicSource.Stop();
-
-    if (gameOverVoiceSource != null)
-        gameOverVoiceSource.Stop();
-
-    // ❌ ปิด object ที่เคยเปิด
-    foreach (var obj in objectsToActivate)
     {
-        if (obj != null)
-            obj.SetActive(false);
-    }
+        if (gameOver) return;
 
-    // ❌ ปิดจอดำ
-    if (blackScreen != null)
-    {
-        blackScreen.color = new Color(0, 0, 0, 0);
-        blackScreen.gameObject.SetActive(false);
-    }
+        gameOver = true;
 
-    // ❌ ปิด video ถ้ามี
-    if (gameOverVideo != null)
-    {
-        gameOverVideo.Stop();
-        gameOverVideo.gameObject.SetActive(false);
-    }
+        StopAllCoroutines();
 
-    // ❌ ปิด script นี้จริง ๆ
-    this.enabled = false;
-}
+        if (dropMachine != null)
+            dropMachine.StopAllCoroutines();
+
+        if (musicSource != null)
+            musicSource.Stop();
+
+        if (repairVoiceSource != null)
+            repairVoiceSource.Stop();
+
+        if (gameOverMusicSource != null)
+            gameOverMusicSource.Stop();
+
+        if (gameOverVoiceSource != null)
+            gameOverVoiceSource.Stop();
+
+        foreach (var obj in objectsToActivate)
+        {
+            if (obj != null)
+                obj.SetActive(false);
+        }
+
+        if (blackScreen != null)
+        {
+            blackScreen.color = new Color(0, 0, 0, 0);
+            blackScreen.gameObject.SetActive(false);
+        }
+
+        if (gameOverVideo != null)
+        {
+            gameOverVideo.Stop();
+            gameOverVideo.gameObject.SetActive(false);
+        }
+
+        this.enabled = false;
+    }
 }

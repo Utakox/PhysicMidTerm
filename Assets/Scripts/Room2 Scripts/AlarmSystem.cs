@@ -4,16 +4,15 @@ using System.Collections;
 public class AlarmSystem : MonoBehaviour
 {
     public AudioSource buttonSpeaker;   // ลำโพงปุ่ม
-
     public AudioSource[] alarmSpeakers; // ลำโพง alarm หลายตัว
+    public AudioSource endingSpeaker;   // ลำโพงเสียงสุดท้าย
 
     public AudioClip buttonSound;
     public AudioClip alarmSound;
+    public AudioClip endingSound;
 
     public GameObject[] alarmLight;
-
     public Rigidbody[] zeroGravityObjects;
-
     public GameObject[] objectsToDisappear;
 
     public float gravityDelay = 3f;
@@ -33,46 +32,58 @@ public class AlarmSystem : MonoBehaviour
     {
         activated = true;
 
-        // เล่นเสียงปุ่ม
-        buttonSpeaker.PlayOneShot(buttonSound);
+        // 🔘 เล่นเสียงปุ่ม
+        if (buttonSpeaker && buttonSound)
+            buttonSpeaker.PlayOneShot(buttonSound);
 
         yield return new WaitForSeconds(0.5f);
 
-        // เล่นเสียง alarm ทุกลำโพง
+        // 🚨 เล่นเสียง alarm ทุกลำโพง
         foreach (AudioSource speaker in alarmSpeakers)
         {
-            speaker.clip = alarmSound;
-            speaker.loop = true;
-            speaker.Play();
+            if (speaker && alarmSound)
+            {
+                speaker.clip = alarmSound;
+                speaker.loop = true;
+                speaker.Play();
+            }
         }
 
-        // เปิดไฟ
+        // 💡 เปิดไฟ
         foreach (GameObject light in alarmLight)
         {
-            light.SetActive(true);
+            if (light) light.SetActive(true);
         }
 
+        // 🧲 เปิด gravity หลัง delay
         StartCoroutine(EnableGravity());
 
         yield return new WaitForSeconds(alarmDuration);
 
-        // หยุดเสียงทุกลำโพง
+        // 🛑 หยุดเสียง alarm
         foreach (AudioSource speaker in alarmSpeakers)
         {
-            speaker.Stop();
+            if (speaker) speaker.Stop();
         }
 
-        // ปิดไฟ
+        // 💡 ปิดไฟ
         foreach (GameObject light in alarmLight)
         {
-            light.SetActive(false);
+            if (light) light.SetActive(false);
         }
 
-        // object หาย
+        // ❌ ทำให้ object หาย
         foreach (GameObject obj in objectsToDisappear)
         {
-            obj.SetActive(false);
+            if (obj) obj.SetActive(false);
         }
+
+        // ⏱️ หน่วงนิดให้จังหวะดี
+        yield return new WaitForSeconds(0.5f);
+
+        // 🔊 เล่นเสียงสุดท้าย
+        if (endingSpeaker && endingSound)
+            endingSpeaker.PlayOneShot(endingSound);
     }
 
     IEnumerator EnableGravity()
@@ -81,7 +92,7 @@ public class AlarmSystem : MonoBehaviour
 
         foreach (Rigidbody rb in zeroGravityObjects)
         {
-            rb.useGravity = true;
+            if (rb) rb.useGravity = true;
         }
     }
 }

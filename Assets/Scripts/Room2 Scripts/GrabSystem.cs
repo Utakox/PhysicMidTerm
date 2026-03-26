@@ -6,27 +6,19 @@ public class GrabSystem : MonoBehaviour
     public float moveSpeed = 10f;
 
     private Rigidbody grabbedObject;
-    private bool canGrab = false;
 
     void Update()
     {
-        // ถ้าอยู่ในโซน
-        if (canGrab)
+        if (Input.GetMouseButtonDown(0))
         {
-            // กดคลิกซ้าย
-            if (Input.GetMouseButtonDown(0))
-            {
-                TryGrab();
-            }
-
-            // ปล่อยคลิก
-            if (Input.GetMouseButtonUp(0))
-            {
-                Release();
-            }
+            TryGrab();
         }
 
-        // ถ้ากำลังถือของ
+        if (Input.GetMouseButtonUp(0))
+        {
+            Release();
+        }
+
         if (grabbedObject != null)
         {
             MoveObject();
@@ -35,13 +27,12 @@ public class GrabSystem : MonoBehaviour
 
     void TryGrab()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward);
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit, grabDistance))
         {
             Rigidbody rb = hit.collider.GetComponent<Rigidbody>();
-
             if (rb != null)
             {
                 grabbedObject = rb;
@@ -53,7 +44,6 @@ public class GrabSystem : MonoBehaviour
     void MoveObject()
     {
         Vector3 targetPosition = Camera.main.transform.position + Camera.main.transform.forward * 2f;
-
         grabbedObject.velocity = (targetPosition - grabbedObject.position) * moveSpeed;
     }
 
@@ -63,23 +53,6 @@ public class GrabSystem : MonoBehaviour
         {
             grabbedObject.useGravity = true;
             grabbedObject = null;
-        }
-    }
-
-    // ตรวจว่าอยู่ใน zone
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("GrabZone"))
-        {
-            canGrab = true;
-        }
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("GrabZone"))
-        {
-            canGrab = false;
         }
     }
 }

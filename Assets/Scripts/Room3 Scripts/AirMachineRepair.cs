@@ -13,40 +13,57 @@ public class AirMachineRepair : MonoBehaviour
     [Header("Active Machine Sound (ก่อนซ่อม)")]
     public AudioSource activeMachineSound;
 
-    [Header("Particle (ก่อนซ่อม)")]
-    public ParticleSystem activeParticle; // 🔥 เพิ่ม
+    [Header("Objects To Disable (ก่อนซ่อม)")] // 🔥 เปลี่ยนเป็น List
+    public List<GameObject> objectsToDisable = new List<GameObject>();
 
     [Header("Complete Voice")]
     public AudioSource voiceSource;
     public AudioClip completeVoice;
 
+    [Header("Alarm Sounds (หลังซ่อม)")]
+    public List<AudioSource> alarmSources = new List<AudioSource>();
+
     [Header("Fixed Machine Sound (หลังซ่อม)")]
     public AudioSource fixedMachineSound;
 
-    [Header("Fade Settings")]
-    public float fadeDuration = 3f;
-    public float fadeStartDelay = 1f;
+    [Header("New Music (Fade In)")] // 🔥 เพิ่ม
+    public AudioSource newMusicSource;
+
+    [Header("Lights")]
+    public List<Light> sceneLights = new List<Light>();
+
+    [Header("Activate Object After Complete")] 
+    public GameObject objectToActivate;
 
     private bool isCompleted = false;
+    private bool isActive = false;
 
     void Start()
     {
-        // เสียงเครื่องพัง
+        isActive = false;
+
         if (activeMachineSound != null)
         {
             activeMachineSound.loop = true;
             activeMachineSound.Play();
         }
 
-        // particle ทำงาน
-        if (activeParticle != null)
+        // 🔥 เปิด object ทั้งหมดก่อน
+        foreach (var obj in objectsToDisable)
         {
-            activeParticle.Play();
+            if (obj != null)
+                obj.SetActive(true);
         }
+    }
+
+    public void EnableRepair()
+    {
+        isActive = true;
     }
 
     void OnTriggerEnter(Collider other)
     {
+        if (!isActive) return;
         if (isCompleted) return;
 
         if (requiredItems.Contains(other.gameObject))
@@ -70,70 +87,93 @@ public class AirMachineRepair : MonoBehaviour
     {
         isCompleted = true;
 
-        // 🔥 หยุด Trap
         if (trapSystem != null)
         {
             trapSystem.StopTrap();
         }
 
-        // 🔇 fade out เสียงเครื่องพัง
+        // 🔊 ปิดเสียงเครื่องเก่า
         if (activeMachineSound != null)
         {
             StartCoroutine(FadeOutSound(activeMachineSound, 1.5f));
         }
 
-        // 💨 ปิด particle
-        if (activeParticle != null)
+        // 🔥 ปิด object ทั้งหมดใน list
+        foreach (var obj in objectsToDisable)
         {
-            activeParticle.Stop();
+            if (obj != null)
+                obj.SetActive(false);
         }
 
-        // 🔥 เริ่ม sequence เสียง + เครื่องใหม่
         StartCoroutine(CompleteSequence());
     }
 
     IEnumerator CompleteSequence()
     {
-        // 🗣️ เล่นเสียง complete ก่อน
+        // 🗣️ เสียงพูด
         if (voiceSource != null && completeVoice != null)
         {
             voiceSource.clip = completeVoice;
             voiceSource.Play();
-
             yield return new WaitForSeconds(completeVoice.length);
         }
 
-        // 🎧 แล้วค่อยเปิดเสียงเครื่องใหม่แบบ fade in
+        // 🚨 alarm
+        foreach (AudioSource alarm in alarmSources)
+        {
+            if (alarm != null)
+            {
+                alarm.Play();
+            }
+        }
+
+        // 💡 เปิดไฟ
+        foreach (Light l in sceneLights)
+        {
+            if (l != null)
+            {
+                l.gameObject.SetActive(true);
+                l.enabled = true;
+                l.color = Color.white;
+            }
+        }
+
+        // 🔥 เปิด object ใหม่
+        if (objectToActivate != null)
+        {
+            objectToActivate.SetActive(true);
+        }
+
+        // 🎧 เสียงเครื่องใหม่
         if (fixedMachineSound != null)
         {
             fixedMachineSound.loop = true;
-            StartCoroutine(FadeInSound(fixedMachineSound, fadeDuration, fadeStartDelay));
+            fixedMachineSound.Play();
+        }
+
+        // 🎵 เพลงใหม่ fade ขึ้น 3 วิ
+        if (newMusicSource != null)
+        {
+            StartCoroutine(FadeInMusic(newMusicSource, 3f));
         }
     }
 
-    IEnumerator FadeInSound(AudioSource audio, float duration, float delay)
+    IEnumerator FadeInMusic(AudioSource audio, float duration)
     {
-        yield return new WaitForSeconds(delay);
-
         audio.volume = 0f;
-        audio.pitch = 0.5f;
+        audio.loop = true;
         audio.Play();
 
-        float time = 0f;
+        float t = 0f;
 
-        while (time < duration)
+        while (t < duration)
         {
-            time += Time.deltaTime;
-            float t = time / duration;
-
-            audio.volume = Mathf.Lerp(0f, 1f, t * t);
-            audio.pitch = Mathf.Lerp(0.5f, 1f, t);
-
+            t += Time.deltaTime;
+            audio.volume = Mathf.Lerp(0f, 1f, t / duration);
             yield return null;
         }
 
-        audio.volume = 1f;
-        audio.pitch = 1f;
+        audio.volume = 0.8f;
     }
 
     IEnumerator FadeOutSound(AudioSource audio, float duration)

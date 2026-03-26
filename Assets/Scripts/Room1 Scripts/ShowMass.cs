@@ -4,7 +4,7 @@ using TMPro;
 public class ShowMass : MonoBehaviour
 {
     public Rigidbody targetRigidbody;
-    public TextMeshProUGUI massText;
+    public TextMeshPro massText;
 
     void Update()
     {

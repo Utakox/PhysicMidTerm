@@ -11,6 +11,7 @@ public class RepairSlot : MonoBehaviour
     public GameObject warpDoor;
 
     public List<GameObject> objectsToDisable = new List<GameObject>();
+    public List<GameObject> objectsToEnable = new List<GameObject>(); // เพิ่มตรงนี้
 
     void OnTriggerEnter(Collider other)
     {
@@ -32,9 +33,16 @@ public class RepairSlot : MonoBehaviour
         {
             warpDoor.SetActive(true);
 
+            // ปิด object
             foreach (GameObject obj in objectsToDisable)
             {
                 obj.SetActive(false);
+            }
+
+            // เปิด object
+            foreach (GameObject obj in objectsToEnable)
+            {
+                obj.SetActive(true);
             }
         }
     }

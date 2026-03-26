@@ -29,7 +29,7 @@ public class MagneticMassPlate : MonoBehaviour
 
             if (Vector3.Distance(rb.position, target) < 0.1f)
             {
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
                 rb.constraints = RigidbodyConstraints.FreezePosition;
 
                 activated = true;

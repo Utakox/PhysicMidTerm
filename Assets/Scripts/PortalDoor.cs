@@ -68,7 +68,7 @@ public class Door : MonoBehaviour
             other.transform.position = teleportTarget.position;
 
             Rigidbody rb = other.GetComponent<Rigidbody>();
-            if (rb) rb.velocity = Vector3.zero;
+            if (rb) rb.linearVelocity = Vector3.zero;
         }
     }
 }

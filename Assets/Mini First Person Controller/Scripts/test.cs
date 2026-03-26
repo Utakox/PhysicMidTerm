@@ -26,10 +26,8 @@ public class FirstPersonController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         Cursor.lockState = CursorLockMode.Locked;
-        
 
         camStartPos = cameraHolder.localPosition;
-        
     }
 
     void Update()
@@ -52,9 +50,8 @@ public class FirstPersonController : MonoBehaviour
 
         Vector3 move = transform.right * x + transform.forward * z;
 
-        Vector3 velocity = new Vector3(move.x * moveSpeed, rb.velocity.y, move.z * moveSpeed);
-
-        rb.velocity = velocity;
+        Vector3 velocity = new Vector3(move.x * moveSpeed, rb.linearVelocity.y, move.z * moveSpeed);
+        rb.linearVelocity = velocity;
     }
 
     void Jump()
@@ -78,28 +75,28 @@ public class FirstPersonController : MonoBehaviour
     }
 
     void HeadBob()
-{
-    Vector3 horizontalVelocity = rb.velocity;
-    horizontalVelocity.y = 0;
-
-    float speed = horizontalVelocity.magnitude;
-
-    if (speed > 0.1f && isGrounded)
     {
-        bobTimer += Time.deltaTime * bobSpeed;
+        Vector3 horizontalVelocity = rb.linearVelocity;
+        horizontalVelocity.y = 0;
+
+        float speed = horizontalVelocity.magnitude;
+
+        if (speed > 0.1f && isGrounded)
+        {
+            bobTimer += Time.deltaTime * bobSpeed;
+        }
+
+        float bobY = Mathf.Sin(bobTimer) * bobAmount * speed;
+        float bobX = Mathf.Cos(bobTimer * 0.5f) * bobAmount * speed;
+
+        Vector3 targetPos = camStartPos + new Vector3(bobX, bobY, 0);
+
+        cameraHolder.localPosition = Vector3.Lerp(
+            cameraHolder.localPosition,
+            targetPos,
+            Time.deltaTime * 8f
+        );
     }
-
-    float bobY = Mathf.Sin(bobTimer) * bobAmount * speed;
-    float bobX = Mathf.Cos(bobTimer * 0.5f) * bobAmount * speed;
-
-    Vector3 targetPos = camStartPos + new Vector3(bobX, bobY, 0);
-
-    cameraHolder.localPosition = Vector3.Lerp(
-        cameraHolder.localPosition,
-        targetPos,
-        Time.deltaTime * 8f
-    );
-}
 
     void OnCollisionStay(Collision collision)
     {
