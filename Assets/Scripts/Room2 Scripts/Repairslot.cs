@@ -5,13 +5,10 @@ public class RepairSlot : MonoBehaviour
 {
     public List<GameObject> requiredObjects = new List<GameObject>();
 
-    public AudioSource audioSource;
-    public AudioClip repairSound;
-
     public GameObject warpDoor;
 
     public List<GameObject> objectsToDisable = new List<GameObject>();
-    public List<GameObject> objectsToEnable = new List<GameObject>(); // เพิ่มตรงนี้
+    public List<GameObject> objectsToEnable = new List<GameObject>();
 
     void OnTriggerEnter(Collider other)
     {
@@ -20,8 +17,6 @@ public class RepairSlot : MonoBehaviour
             requiredObjects.Remove(other.gameObject);
 
             Destroy(other.gameObject);
-
-            audioSource.PlayOneShot(repairSound);
 
             CheckComplete();
         }
@@ -33,13 +28,11 @@ public class RepairSlot : MonoBehaviour
         {
             warpDoor.SetActive(true);
 
-            // ปิด object
             foreach (GameObject obj in objectsToDisable)
             {
                 obj.SetActive(false);
             }
 
-            // เปิด object
             foreach (GameObject obj in objectsToEnable)
             {
                 obj.SetActive(true);
