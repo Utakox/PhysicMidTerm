@@ -8,6 +8,10 @@ public class ShowMass : MonoBehaviour
 
     void Update()
     {
-        massText.text = "" + targetRigidbody.mass.ToString("F1");
+        // เพิ่มเงื่อนไขเช็คว่าทั้ง Rigidbody และ TextMeshPro ต้องไม่ว่างเปล่า
+        if (targetRigidbody != null && massText != null)
+        {
+            massText.text = targetRigidbody.mass.ToString("F1");
+        }
     }
 }
